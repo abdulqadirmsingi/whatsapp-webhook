@@ -308,21 +308,5 @@ For technical support or questions:
 - Verify webhook connectivity
 - Test with WhatsApp Business API documentation
 
-## 📄 License
-
-MIT License - see LICENSE file for details
-
----
-
-## 🎯 Demo Checklist for Client Presentation
-
-- [ ] Show admin dashboard overview
-- [ ] Demonstrate complete order flow
-- [ ] Display real-time order tracking
-- [ ] Show PDF receipt generation
-- [ ] Demonstrate payment option flexibility
-- [ ] Present order management features
-- [ ] Show customer database functionality
-- [ ] Display sales analytics and reporting
 
 This system provides a complete e-commerce solution through WhatsApp, perfect for small to medium businesses looking to streamline their order process and improve customer experience.
