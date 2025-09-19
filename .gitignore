@@ -1,0 +1,48 @@
+# Node modules
+node_modules/
+
+# Environment variables
+.env
+config.env
+
+# Database
+database/orders.db
+
+# PDF receipts
+receipts/*.pdf
+
+# Logs
+*.log
+logs/
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage directory used by tools like istanbul
+coverage/
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Runtime
+dist/
+build/
+
+# Temporary files
+tmp/
+temp/
