@@ -528,12 +528,6 @@ class ConversationHandler {
             "Your order receipt"
           );
 
-          // Also send a text message with the link
-          await this.whatsappService.sendMessage(
-            phoneNumber,
-            `📄 Your receipt is ready: ${receiptUrl}`
-          );
-
           console.log(`Receipt generated: ${receipt.path}`);
         } catch (pdfError) {
           console.error("Error generating PDF receipt:", pdfError);
