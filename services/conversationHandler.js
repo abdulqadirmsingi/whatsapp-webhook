@@ -128,7 +128,6 @@ class ConversationHandler {
       { id: "browse_products", title: "🛍️ Browse" },
       { id: "check_order", title: "📋 Orders" },
       { id: "contact_support", title: "📞 Support" },
-      { id: "restart", title: "🔄 Restart" },
     ];
 
     await this.whatsappService.sendButtons(
