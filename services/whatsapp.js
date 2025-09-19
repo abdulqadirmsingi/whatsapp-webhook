@@ -5,7 +5,7 @@ class WhatsAppService {
   constructor() {
     this.accessToken = process.env.WHATSAPP_TOKEN;
     this.phoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID;
-    this.baseUrl = `https://graph.facebook.com/v18.0/${this.phoneNumberId}/messages`;
+    this.baseUrl = `https://graph.facebook.com/v22.0/${this.phoneNumberId}/messages`;
   }
 
   async sendMessage(to, message) {

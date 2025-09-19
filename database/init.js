@@ -77,7 +77,7 @@ function initializeDatabase() {
                 )
             `);
 
-      // Insert sample products
+      // Insert sample products 
       db.run(
         `
                 INSERT OR IGNORE INTO products (name, description, price, category) VALUES
@@ -85,12 +85,7 @@ function initializeDatabase() {
                 ('Jeans', 'Denim Jeans - Blue', 65.00, 'Clothing'),
                 ('Sneakers', 'Sports Sneakers - White/Black', 85.00, 'Footwear'),
                 ('Backpack', 'Travel Backpack - 30L Capacity', 45.00, 'Accessories'),
-                ('Smartphone Case', 'Protective Phone Case', 15.00, 'Electronics'),
-                ('Water Bottle', 'Stainless Steel Water Bottle', 20.00, 'Accessories'),
-                ('Headphones', 'Wireless Bluetooth Headphones', 120.00, 'Electronics'),
-                ('Notebook', 'A4 Spiral Notebook - 200 pages', 8.00, 'Stationery'),
-                ('Pen Set', 'Premium Ballpoint Pen Set (3 pens)', 12.00, 'Stationery'),
-                ('Coffee Mug', 'Ceramic Coffee Mug - 350ml', 18.00, 'Kitchen')
+                ('Smartphone Case', 'Protective Phone Case', 15.00, 'Electronics')
             `,
         function (err) {
           if (err) {

@@ -114,9 +114,9 @@ class ConversationHandler {
     }*!\n\nI'm here to help you place your order easily through WhatsApp.\n\nWhat would you like to do today?`;
 
     const buttons = [
-      { id: "browse_products", title: "🛍️ Browse Products" },
-      { id: "check_order", title: "📋 Check Order Status" },
-      { id: "contact_support", title: "📞 Contact Support" },
+      { id: "browse_products", title: "🛍️ Browse" },
+      { id: "check_order", title: "📋 Orders" },
+      { id: "contact_support", title: "📞 Support" },
     ];
 
     await this.whatsappService.sendButtons(
@@ -186,23 +186,35 @@ class ConversationHandler {
       return acc;
     }, {});
 
-    let catalogMessage = "🛍️ *Our Product Catalog*\n\n";
+    // Send header message
+    await this.whatsappService.sendMessage(
+      phoneNumber,
+      "🛍️ *Our Product Catalog*\n\nTo select a product, reply with the product number (e.g., '1' for the first product).\n\n"
+    );
 
+    // Send products in smaller chunks
     for (const [category, categoryProducts] of Object.entries(
       productsByCategory
     )) {
-      catalogMessage += `📂 *${category}*\n`;
+      let categoryMessage = `📂 *${category}*\n`;
+      
       categoryProducts.forEach((product) => {
-        catalogMessage += `${product.id}. ${
-          product.name
-        } - $${product.price.toFixed(2)}\n   ${product.description}\n\n`;
+        const productLine = `${product.id}. ${product.name} - $${product.price.toFixed(2)}\n   ${product.description}\n\n`;
+        
+        if (categoryMessage.length + productLine.length > 3500) {
+          this.whatsappService.sendMessage(phoneNumber, categoryMessage);
+          categoryMessage = `📂 *${category}* (continued)\n${productLine}`;
+        } else {
+          categoryMessage += productLine;
+        }
       });
+      
+      // Send remaining products in this category
+      if (categoryMessage.length > 0) {
+        await this.whatsappService.sendMessage(phoneNumber, categoryMessage);
+      }
     }
 
-    catalogMessage +=
-      "To select a product, reply with the product number (e.g., '1' for the first product).";
-
-    await this.whatsappService.sendMessage(phoneNumber, catalogMessage);
     await this.orderService.updateCustomerState(
       phoneNumber,
       this.orderService.conversationSteps.SELECT_PRODUCT,
@@ -283,8 +295,8 @@ class ConversationHandler {
     )}\n\nWould you like to add more products?`;
 
     const buttons = [
-      { id: "add_more", title: "➕ Add More Products" },
-      { id: "proceed_checkout", title: "🛒 Proceed to Checkout" },
+      { id: "add_more", title: "➕ Add More" },
+      { id: "proceed_checkout", title: "🛒 Checkout" },
     ];
 
     await this.whatsappService.sendButtons(
@@ -356,8 +368,8 @@ class ConversationHandler {
       "💳 *Payment Options*\n\nPlease choose your preferred payment method:";
 
     const buttons = [
-      { id: "instant", title: "💳 Pay Immediately" },
-      { id: "30_days", title: "📅 Pay in 30 Days" },
+      { id: "instant", title: "💳 Pay Now" },
+      { id: "30_days", title: "📅 Pay Later" },
     ];
 
     await this.whatsappService.sendButtons(
@@ -412,8 +424,8 @@ class ConversationHandler {
     confirmationMessage += "Is this correct?";
 
     const buttons = [
-      { id: "confirm_order", title: "✅ Confirm Order" },
-      { id: "cancel_order", title: "❌ Cancel Order" },
+      { id: "confirm_order", title: "✅ Confirm" },
+      { id: "cancel_order", title: "❌ Cancel" },
     ];
 
     await this.whatsappService.sendButtons(
