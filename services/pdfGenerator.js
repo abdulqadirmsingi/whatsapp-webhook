@@ -118,11 +118,12 @@ class PDFGenerator {
       );
 
     // Status
-    const statusColor = order.status === "confirmed" ? "#27ae60" : "#f39c12";
+    const orderStatus = order.status || 'pending';
+    const statusColor = orderStatus === "confirmed" ? "#27ae60" : "#f39c12";
     doc
       .fontSize(10)
       .fillColor(statusColor)
-      .text(`Status: ${order.status.toUpperCase()}`, 400, startY)
+      .text(`Status: ${orderStatus.toUpperCase()}`, 400, startY)
       .fillColor("#2c3e50");
   }
 

@@ -31,6 +31,17 @@ class ConversationHandler {
         `Processing message from ${phoneNumber}, Step: ${currentStep}, Message: ${messageText}`
       );
 
+      // Check for restart keywords from any step
+      const restartKeywords = ['restart', 'start over', 'reset', 'begin again', 'new order', 'menu'];
+      if (restartKeywords.some(keyword => messageText.toLowerCase().includes(keyword))) {
+        await this.orderService.clearCustomerState(phoneNumber);
+        await this.whatsappService.sendMessage(
+          phoneNumber,
+          "🔄 *Conversation Restarted!*\n\nAll your previous selections have been cleared. Let's start fresh!"
+        );
+        return await this.handleStart(phoneNumber);
+      }
+
       switch (currentStep) {
         case this.orderService.conversationSteps.START:
           return await this.handleStart(phoneNumber);
@@ -117,6 +128,7 @@ class ConversationHandler {
       { id: "browse_products", title: "🛍️ Browse" },
       { id: "check_order", title: "📋 Orders" },
       { id: "contact_support", title: "📞 Support" },
+      { id: "restart", title: "🔄 Restart" },
     ];
 
     await this.whatsappService.sendButtons(
@@ -157,6 +169,14 @@ class ConversationHandler {
         );
         return await this.handleStart(phoneNumber);
 
+      case "restart":
+        await this.orderService.clearCustomerState(phoneNumber);
+        await this.whatsappService.sendMessage(
+          phoneNumber,
+          "🔄 *Conversation Restarted!*\n\nAll your previous selections have been cleared. Let's start fresh!"
+        );
+        return await this.handleStart(phoneNumber);
+
       default:
         await this.whatsappService.sendMessage(
           phoneNumber,
@@ -167,9 +187,9 @@ class ConversationHandler {
   }
 
   async showProductCatalog(phoneNumber) {
-    const products = await this.orderService.getProducts();
+    const allProducts = await this.orderService.getProducts();
 
-    if (products.length === 0) {
+    if (allProducts.length === 0) {
       await this.whatsappService.sendMessage(
         phoneNumber,
         "Sorry, no products are currently available. Please check back later."
@@ -177,48 +197,33 @@ class ConversationHandler {
       return await this.handleStart(phoneNumber);
     }
 
-    // Group products by category
-    const productsByCategory = products.reduce((acc, product) => {
-      if (!acc[product.category]) {
-        acc[product.category] = [];
-      }
-      acc[product.category].push(product);
-      return acc;
-    }, {});
+    // Limit to only 5 products
+    const products = allProducts.slice(0, 5);
 
     // Send header message
     await this.whatsappService.sendMessage(
       phoneNumber,
-      "🛍️ *Our Product Catalog*\n\nTo select a product, reply with the product number (e.g., '1' for the first product).\n\n"
+      "🛍️ *Our Featured Products*\n\nTo select a product, reply with the product number (e.g., '1' for the first product).\n\nType 'restart' or 'menu' to go back to the main menu.\n\n"
     );
 
-    // Send products in smaller chunks
-    for (const [category, categoryProducts] of Object.entries(
-      productsByCategory
-    )) {
-      let categoryMessage = `📂 *${category}*\n`;
-      
-      categoryProducts.forEach((product) => {
-        const productLine = `${product.id}. ${product.name} - $${product.price.toFixed(2)}\n   ${product.description}\n\n`;
-        
-        if (categoryMessage.length + productLine.length > 3500) {
-          this.whatsappService.sendMessage(phoneNumber, categoryMessage);
-          categoryMessage = `📂 *${category}* (continued)\n${productLine}`;
-        } else {
-          categoryMessage += productLine;
-        }
-      });
-      
-      // Send remaining products in this category
-      if (categoryMessage.length > 0) {
-        await this.whatsappService.sendMessage(phoneNumber, categoryMessage);
-      }
+    // Send products in a single message
+    let productMessage = "";
+    products.forEach((product, index) => {
+      const productLine = `${index + 1}. ${product.name} - $${product.price.toFixed(2)}\n   ${product.description}\n\n`;
+      productMessage += productLine;
+    });
+
+    // Add note about more products if there are more than 5
+    if (allProducts.length > 5) {
+      productMessage += `\n📝 *Note: Showing 5 of ${allProducts.length} available products. Contact support for the complete catalog.*`;
     }
+
+    await this.whatsappService.sendMessage(phoneNumber, productMessage);
 
     await this.orderService.updateCustomerState(
       phoneNumber,
       this.orderService.conversationSteps.SELECT_PRODUCT,
-      { items: [] }
+      { items: [], availableProducts: products }
     );
   }
 
@@ -228,22 +233,35 @@ class ConversationHandler {
     interactiveData,
     orderData
   ) {
-    const productId = parseInt(messageText.trim());
-
-    if (isNaN(productId)) {
+    // Check for restart keywords first
+    const restartKeywords = ['restart', 'start over', 'reset', 'begin again', 'new order', 'menu'];
+    if (restartKeywords.some(keyword => messageText.toLowerCase().includes(keyword))) {
+      await this.orderService.clearCustomerState(phoneNumber);
       await this.whatsappService.sendMessage(
         phoneNumber,
-        "Please enter a valid product number."
+        "🔄 *Conversation Restarted!*\n\nAll your previous selections have been cleared. Let's start fresh!"
+      );
+      return await this.handleStart(phoneNumber);
+    }
+
+    const productIndex = parseInt(messageText.trim()) - 1; // Convert to 0-based index
+
+    if (isNaN(productIndex) || productIndex < 0) {
+      await this.whatsappService.sendMessage(
+        phoneNumber,
+        "Please enter a valid product number (1-5) or type 'restart' to go back to the main menu."
       );
       return;
     }
 
-    const product = await this.orderService.getProductById(productId);
+    // Get the product from the stored available products list
+    const availableProducts = orderData.availableProducts || [];
+    const product = availableProducts[productIndex];
 
     if (!product) {
       await this.whatsappService.sendMessage(
         phoneNumber,
-        "Product not found. Please enter a valid product number."
+        "Product not found. Please enter a valid product number (1-5) or type 'restart' to go back to the main menu."
       );
       return;
     }
@@ -264,12 +282,23 @@ class ConversationHandler {
   }
 
   async handleSpecifyQuantity(phoneNumber, messageText, orderData) {
+    // Check for restart keywords first
+    const restartKeywords = ['restart', 'start over', 'reset', 'begin again', 'new order', 'menu'];
+    if (restartKeywords.some(keyword => messageText.toLowerCase().includes(keyword))) {
+      await this.orderService.clearCustomerState(phoneNumber);
+      await this.whatsappService.sendMessage(
+        phoneNumber,
+        "🔄 *Conversation Restarted!*\n\nAll your previous selections have been cleared. Let's start fresh!"
+      );
+      return await this.handleStart(phoneNumber);
+    }
+
     const quantity = parseInt(messageText.trim());
 
     if (isNaN(quantity) || quantity <= 0) {
       await this.whatsappService.sendMessage(
         phoneNumber,
-        "Please enter a valid quantity (positive number)."
+        "Please enter a valid quantity (positive number) or type 'restart' to go back to the main menu."
       );
       return;
     }
@@ -352,12 +381,23 @@ class ConversationHandler {
   }
 
   async handleCustomerInfo(phoneNumber, messageText, orderData) {
+    // Check for restart keywords first
+    const restartKeywords = ['restart', 'start over', 'reset', 'begin again', 'new order', 'menu'];
+    if (restartKeywords.some(keyword => messageText.toLowerCase().includes(keyword))) {
+      await this.orderService.clearCustomerState(phoneNumber);
+      await this.whatsappService.sendMessage(
+        phoneNumber,
+        "🔄 *Conversation Restarted!*\n\nAll your previous selections have been cleared. Let's start fresh!"
+      );
+      return await this.handleStart(phoneNumber);
+    }
+
     const customerName = messageText.trim();
 
     if (customerName.length < 2) {
       await this.whatsappService.sendMessage(
         phoneNumber,
-        "Please provide a valid full name (at least 2 characters)."
+        "Please provide a valid full name (at least 2 characters) or type 'restart' to go back to the main menu."
       );
       return;
     }

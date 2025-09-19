@@ -188,6 +188,7 @@ class OrderService {
                           order_number: orderNumber,
                           total_amount: totalAmount,
                           payment_method: paymentMethod,
+                          status: 'pending',
                           items: orderItems,
                         });
                       }
