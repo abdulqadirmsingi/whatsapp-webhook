@@ -514,10 +514,26 @@ class ConversationHandler {
         // Generate and send PDF receipt
         try {
           const receipt = await this.pdfGenerator.generateReceipt(order);
+
+          // Build a public URL for WhatsApp to fetch the document
+          const baseUrl =
+            process.env.PUBLIC_BASE_URL || `http://localhost:${process.env.PORT || 3000}`;
+          const receiptUrl = `${baseUrl}${receipt.url}`;
+
+          // Send as WhatsApp document for better UX
+          await this.whatsappService.sendDocument(
+            phoneNumber,
+            receiptUrl,
+            receipt.filename,
+            "Your order receipt"
+          );
+
+          // Also send a text message with the link
           await this.whatsappService.sendMessage(
             phoneNumber,
-            `📄 Your receipt has been generated! You can download it from: ${receipt.filename}`
+            `📄 Your receipt is ready: ${receiptUrl}`
           );
+
           console.log(`Receipt generated: ${receipt.path}`);
         } catch (pdfError) {
           console.error("Error generating PDF receipt:", pdfError);
